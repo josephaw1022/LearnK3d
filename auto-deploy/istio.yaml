@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-ingress
+
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: istio-base
+  namespace: kube-system
+spec:
+  repo: https://istio-release.storage.googleapis.com/charts
+  chart: base
+  targetNamespace: istio-system
+  valuesContent: |
+    defaultRevision: default
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: istiod
+  namespace: kube-system
+spec:
+  repo: https://istio-release.storage.googleapis.com/charts
+  chart: istiod
+  targetNamespace: istio-system
+  valuesContent: |
+    global:
+      istioNamespace: istio-system
+  wait: true
+
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: istio-cni
+  namespace: kube-system
+spec:
+  repo: https://istio-release.storage.googleapis.com/charts
+  chart: istio-cni
+  targetNamespace: kube-system
+  wait: true
+
+
+
+
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: istio-gateway
+  namespace: kube-system
+spec:
+  repo: https://istio-release.storage.googleapis.com/charts
+  chart: gateway
+  targetNamespace: istio-ingress
+  releaseName: istio-gateway
+  valuesContent: |
+    service:
+      type: NodePort
+      ports:
+        - name: status-port
+          port: 15021
+          protocol: TCP
+        - name: http2
+          port: 80
+          protocol: TCP
+          targetPort: 80
+          nodePort: 30083
+        - name: https
+          port: 443
+          protocol: TCP
+          nodePort: 30084
+
+
+
+
+
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: istio-ingress-gateway-tls
+  namespace: istio-ingress
+spec:
+  secretName: istio-ingress-gateway-tls
+  commonName: "*.localhost"
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+
+
+
+
+
+---
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: istio-ingress-gateway
+  namespace: istio-ingress
+spec:
+  selector:
+    istio: ingress
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*.localhost"
+    tls:
+      httpsRedirect: true
+
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - "*.localhost"
+    tls:
+      mode: SIMPLE
+      credentialName: istio-ingress-gateway-tls
+

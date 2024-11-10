@@ -1,0 +1,69 @@
+version: '3'
+
+tasks:
+  create-cluster:
+    desc: "Spin up the K3d cluster using the k3d-config.yaml config file"
+    cmds:
+    - k3d cluster create --config k3d-config.yaml
+    silent: false
+
+  delete-cluster:
+    desc: "Tear down the K3d cluster"
+    cmds:
+    - k3d cluster delete three-node-cluster
+    silent: false
+
+  get-cluster-info:
+    desc: "Get information about the current K3d cluster"
+    cmds:
+    - k3d cluster list
+    - kubectl cluster-info
+    silent: false
+
+  get-nodes:
+    desc: "List all nodes in the K3d cluster"
+    cmds:
+    - kubectl get nodes
+    silent: false
+
+  get-pods:
+    desc: "List all pods in all namespaces"
+    cmds:
+    - kubectl get pods --all-namespaces
+    silent: false
+
+  load-image:
+    desc: "Load a Docker image into the K3d cluster"
+    vars:
+      IMAGE: "" # Provide the Docker image name
+    cmds:
+    - k3d image import {{.IMAGE}} -c three-node-cluster
+    silent: false
+    sources:
+    - env: IMAGE # Ensure IMAGE is provided when running this task
+
+  reload-cluster:
+    desc: "Reload the K3d cluster by deleting and recreating it"
+    cmds:
+    - task delete-cluster
+    - task create-cluster
+    silent: false
+
+
+  helm-upgrade-nginx:
+    desc: "Install or upgrade the nginx-chart Helm release"
+    cmds:
+    - helm upgrade --install nginx-chart ./nginx-chart --namespace nginx-chart --create-namespace --wait
+    silent: false
+
+  helm-delete-nginx:
+    desc: "Delete the nginx-chart Helm release"
+    cmds:
+    - helm uninstall nginx-chart --namespace nginx-chart
+    silent: false
+
+  delete-helm-namespace:
+    desc: "Delete the nginx-chart Helm namespace"
+    cmds:
+    - kubectl delete namespace nginx-chart
+    silent: false

@@ -1,0 +1,34 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: three-node-cluster
+servers: 1
+agents: 3
+ports:
+- port: 80:30083
+  nodeFilters:
+  - server:*
+- port: 443:30084
+  nodeFilters:
+  - server:*
+- port: 30080:30080
+  nodeFilters:
+  - server:*
+- port: 30443:30443
+  nodeFilters:
+  - server:*
+- port: 15021:30003
+  nodeFilters:
+  - server:*
+options:
+  k3s:
+    extraArgs:
+    - arg: "--disable=traefik"
+      nodeFilters:
+      - server:*
+volumes:
+- volume: "C:/Users/josep/source/repos/LearnK3d/auto-deploy:/var/lib/rancher/k3s/server/manifests"
+
+  nodeFilters:
+  - server:*
+
